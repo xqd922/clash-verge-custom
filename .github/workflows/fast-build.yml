@@ -67,6 +67,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pnpm install --frozen-lockfile --prefer-offline
+          pnpm check x86_64-pc-windows-msvc
 
       - name: Fast Build (Dev Profile)
         timeout-minutes: 20

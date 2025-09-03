@@ -73,12 +73,12 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
           RUST_BACKTRACE: "0"
-          CARGO_PROFILE: "dev"
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         run: |
+          pnpm run web:build
           cd src-tauri
-          cargo build --target x86_64-pc-windows-msvc
+          cargo build --target x86_64-pc-windows-msvc --profile dev
 
       - name: Get Version
         id: version

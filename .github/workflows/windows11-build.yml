@@ -1,7 +1,5 @@
 name: Windows 11 Build
 
-name: Windows 11 Build
-
 on:
   workflow_dispatch:
     inputs:
@@ -114,37 +112,21 @@ jobs:
             
             Copy-Item $exePath "$portableDir\Clash-Verge-Rev.exe"
             
-            # Create README
-            $readme = @'
-# Clash Verge Rev - Windows 11 专版
-
-## 版本信息
-- 版本号: {0}
-- 架构: {1}
-- 构建时间: {2}
-- Git 提交: {3}
-- 目标系统: Windows 11
-
-## 安装说明
-### 安装包版本
-- 运行 setup.exe 文件进行标准安装
-- 支持自动更新和卸载
-
-### 便携版本
-- 解压后直接运行 Clash-Verge-Rev.exe
-- 无需安装，设置保存在程序目录
-- 适合临时使用或多版本并存
-
-## 系统要求
-- Windows 11 (推荐)
-- Windows 10 version 1903 或更高版本
-- .NET Framework 4.7.2 或更高版本
-- WebView2 运行时 (通常系统自带)
-
-## 更新日志
-请访问 GitHub Releases 页面查看详细更新日志
-'@ -f $version, $arch, "${{ steps.version.outputs.BUILD_TIME }}", "${{ steps.version.outputs.COMMIT_SHA }}"
-            Set-Content -Path "$portableDir\README.txt" -Value $readme
+            # Create README with simpler content to avoid encoding issues
+            $readmeContent = "# Clash Verge Rev - Windows 11 Edition`n`n"
+            $readmeContent += "Version: $version`n"
+            $readmeContent += "Architecture: $arch`n"
+            $readmeContent += "Build Time: ${{ steps.version.outputs.BUILD_TIME }}`n"
+            $readmeContent += "Git Commit: ${{ steps.version.outputs.COMMIT_SHA }}`n`n"
+            $readmeContent += "## Installation`n"
+            $readmeContent += "- For installer: Run the setup.exe file`n"
+            $readmeContent += "- For portable: Extract and run Clash-Verge-Rev.exe`n`n"
+            $readmeContent += "## System Requirements`n"
+            $readmeContent += "- Windows 11 (recommended)`n"
+            $readmeContent += "- Windows 10 version 1903 or higher`n"
+            $readmeContent += "- WebView2 runtime (usually pre-installed)`n"
+            
+            Set-Content -Path "$portableDir\README.txt" -Value $readmeContent -Encoding UTF8
             
             # Create portable zip
             Compress-Archive -Path $portableDir -DestinationPath "windows11-release\Clash-Verge-Rev-${version}-Windows11-${arch}-Portable.zip"
@@ -164,40 +146,40 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}
-          name: "Clash Verge Rev ${{ steps.version.outputs.VERSION }} - Windows 11 专版"
+          name: "Clash Verge Rev ${{ steps.version.outputs.VERSION }} - Windows 11 Edition"
           body: |
-            ## 🎉 Clash Verge Rev Windows 11 专版发布
+            ## 🎉 Clash Verge Rev Windows 11 Edition Release
             
-            ### 📦 下载选项
-            - **setup.exe**: 标准安装程序 (推荐新用户)
-              - 自动配置系统集成
-              - 支持自动更新
-              - 完整的卸载支持
+            ### 📦 Download Options
+            - **setup.exe**: Standard installer (recommended for new users)
+              - Automatic system integration
+              - Support for automatic updates
+              - Complete uninstall support
             
-            - **Portable.zip**: 便携版本 (推荐高级用户)
-              - 无需安装，解压即用
-              - 设置便携化存储
-              - 支持多版本并存
+            - **Portable.zip**: Portable version (recommended for advanced users)
+              - No installation required, extract and run
+              - Portable settings storage
+              - Support for multiple versions coexistence
             
-            ### 🏗️ 架构支持
-            - **x64**: Intel/AMD 64位处理器 (推荐)
-            - **arm64**: ARM64 架构处理器 (Surface Pro X 等)
+            ### 🏗️ Architecture Support
+            - **x64**: Intel/AMD 64-bit processors (recommended)
+            - **arm64**: ARM64 architecture processors (Surface Pro X, etc.)
             
-            ### 💻 系统要求
-            - Windows 11 (推荐，完整功能支持)
-            - Windows 10 version 1903+ (基础功能支持)
-            - WebView2 运行时 (现代 Windows 系统通常已预装)
+            ### 💻 System Requirements
+            - Windows 11 (recommended, full feature support)
+            - Windows 10 version 1903+ (basic feature support)
+            - WebView2 runtime (usually pre-installed on modern Windows)
             
-            ### 📋 版本信息
-            - 版本: ${{ steps.version.outputs.VERSION }}
-            - 构建时间: ${{ steps.version.outputs.BUILD_TIME }}
-            - Git 提交: ${{ steps.version.outputs.COMMIT_SHA }}
+            ### 📋 Version Information
+            - Version: ${{ steps.version.outputs.VERSION }}
+            - Build Time: ${{ steps.version.outputs.BUILD_TIME }}
+            - Git Commit: ${{ steps.version.outputs.COMMIT_SHA }}
             
-            ### 🔄 更新说明
-            此版本专为 Windows 11 优化，提供更好的性能和用户体验。
+            ### 🔄 Update Notes
+            This version is specifically optimized for Windows 11, providing better performance and user experience.
             
             ---
-            **注意**: 首次使用请参考 [使用文档](https://github.com/clash-verge-rev/clash-verge-rev/wiki) 进行配置。
+            **Note**: For first-time users, please refer to the [Usage Documentation](https://github.com/clash-verge-rev/clash-verge-rev/wiki) for configuration.
           files: windows11-release/*
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false

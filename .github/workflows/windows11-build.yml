@@ -94,6 +94,7 @@ jobs:
           RUST_BACKTRACE: "1"
           CARGO_INCREMENTAL: "1"
           CARGO_NET_RETRY: "10"
+          TAURI_SKIP_UPDATER_SIGNATURE: "true"
         with:
           tauriScript: pnpm
           args: --target ${{ matrix.target }} --bundles nsis

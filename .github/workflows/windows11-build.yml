@@ -92,10 +92,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
           RUST_BACKTRACE: "1"
-          CARGO_INCREMENTAL: "0"
+          CARGO_INCREMENTAL: "1"
           CARGO_NET_RETRY: "10"
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
-          CARGO_PROFILE_RELEASE_LTO: "thin"
         with:
           tauriScript: pnpm
           args: --target ${{ matrix.target }} --bundles nsis

@@ -1,0 +1,140 @@
+name: Windows 11 Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions: write-all
+
+jobs:
+  windows11-build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+          - target: aarch64-pc-windows-msvc
+            arch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install Dependencies
+        run: |
+          pnpm install
+          pnpm check ${{ matrix.target }}
+
+      - name: Build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: pnpm
+          args: --target ${{ matrix.target }}
+
+      - name: Get Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Create Windows 11 Package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $arch = "${{ matrix.arch }}"
+          $target = "${{ matrix.target }}"
+          
+          # Create output directory
+          New-Item -ItemType Directory -Path "windows11-release" -Force
+          
+          # Copy installer if exists
+          $installerPath = "src-tauri\target\$target\release\bundle\nsis\Clash Verge_${version}_${arch}-setup.exe"
+          if (Test-Path $installerPath) {
+            $newName = "Clash-Verge-Rev-${version}-Windows11-${arch}-setup.exe"
+            Copy-Item $installerPath "windows11-release\$newName"
+            Write-Host "Created installer: $newName"
+          }
+          
+          # Create portable version
+          $exePath = "src-tauri\target\$target\release\clash-verge.exe"
+          if (Test-Path $exePath) {
+            $portableDir = "Clash-Verge-Rev-${version}-Windows11-${arch}-Portable"
+            New-Item -ItemType Directory -Path $portableDir -Force
+            
+            Copy-Item $exePath "$portableDir\Clash-Verge-Rev.exe"
+            
+            # Create README
+            $readme = @"
+# Clash Verge Rev - Windows 11 Edition
+
+Version: $version
+Architecture: $arch
+Build for: Windows 11
+
+## Installation
+- For installer: Run the setup.exe file
+- For portable: Extract and run Clash-Verge-Rev.exe
+
+## System Requirements
+- Windows 11 (recommended)
+- Windows 10 version 1903 or higher
+"@
+            Set-Content -Path "$portableDir\README.txt" -Value $readme
+            
+            # Create portable zip
+            Compress-Archive -Path $portableDir -DestinationPath "windows11-release\Clash-Verge-Rev-${version}-Windows11-${arch}-Portable.zip"
+            Write-Host "Created portable: Clash-Verge-Rev-${version}-Windows11-${arch}-Portable.zip"
+          }
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows11-${{ matrix.arch }}
+          path: windows11-release/*
+          if-no-files-found: warn
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Clash Verge Rev ${{ steps.version.outputs.VERSION }} - Windows 11"
+          body: |
+            ## Windows 11 专版下载
+
+            ### 安装包类型
+            - **setup.exe**: 标准安装程序
+            - **Portable.zip**: 便携版，解压即用
+
+            ### 架构支持
+            - **x64**: 64位系统（推荐）
+            - **arm64**: ARM64架构
+
+            ### 系统要求
+            - Windows 11（推荐）
+            - Windows 10 version 1903+
+          files: windows11-release/*
+          token: ${{ secrets.GITHUB_TOKEN }}

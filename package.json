@@ -15,6 +15,9 @@
     "updater-fixed-webview2": "node scripts/updater-fixed-webview2.mjs",
     "portable": "node scripts/portable.mjs",
     "portable-fixed-webview2": "node scripts/portable-fixed-webview2.mjs",
+    "build:windows": "node scripts/build-windows.mjs",
+    "build:windows:x64": "node scripts/build-windows.mjs x64",
+    "build:windows:arm64": "node scripts/build-windows.mjs arm64",
     "fix-alpha-version": "node scripts/alpha_version.mjs",
     "prepare": "husky"
   },

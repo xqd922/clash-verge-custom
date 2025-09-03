@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号 (留空则自动获取)'
+        description: "版本号 (留空则自动获取)"
         required: false
         type: string
       create_release:
-        description: '创建 GitHub Release'
+        description: "创建 GitHub Release"
         required: false
         default: true
         type: boolean
@@ -19,17 +19,19 @@ on:
       - main
       - master
     paths:
-      - 'src/**'
-      - 'src-tauri/**'
-      - 'package.json'
-      - '.github/workflows/windows11-build.yml'
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - ".github/workflows/windows11-build.yml"
 
 permissions: write-all
 
 jobs:
   windows11-build:
     runs-on: windows-latest
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-pc-windows-msvc
@@ -43,6 +45,14 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          cache-on-failure: true
 
       - name: Add Target
         run: rustup target add ${{ matrix.target }}
@@ -57,6 +67,14 @@ jobs:
         with:
           run_install: false
 
+      - name: Node.js Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: Install Dependencies
         run: |
           pnpm install
@@ -64,9 +82,12 @@ jobs:
 
       - name: Build
         uses: tauri-apps/tauri-action@v0
+        timeout-minutes: 45
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           tauriScript: pnpm
           args: --target ${{ matrix.target }}
@@ -92,10 +113,10 @@ jobs:
           $version = "${{ steps.version.outputs.VERSION }}"
           $arch = "${{ matrix.arch }}"
           $target = "${{ matrix.target }}"
-          
+
           # Create output directory
           New-Item -ItemType Directory -Path "windows11-release" -Force
-          
+
           # Copy installer if exists
           $installerPath = "src-tauri\target\$target\release\bundle\nsis\Clash Verge_${version}_${arch}-setup.exe"
           if (Test-Path $installerPath) {
@@ -103,7 +124,7 @@ jobs:
             Copy-Item $installerPath "windows11-release\$newName"
             Write-Host "Created installer: $newName"
           }
-          
+
           # Create portable version
           $exePath = "src-tauri\target\$target\release\clash-verge.exe"
           if (Test-Path $exePath) {
@@ -149,35 +170,35 @@ jobs:
           name: "Clash Verge Rev ${{ steps.version.outputs.VERSION }} - Windows 11 Edition"
           body: |
             ## 🎉 Clash Verge Rev Windows 11 Edition Release
-            
+
             ### 📦 Download Options
             - **setup.exe**: Standard installer (recommended for new users)
               - Automatic system integration
               - Support for automatic updates
               - Complete uninstall support
-            
+
             - **Portable.zip**: Portable version (recommended for advanced users)
               - No installation required, extract and run
               - Portable settings storage
               - Support for multiple versions coexistence
-            
+
             ### 🏗️ Architecture Support
             - **x64**: Intel/AMD 64-bit processors (recommended)
             - **arm64**: ARM64 architecture processors (Surface Pro X, etc.)
-            
+
             ### 💻 System Requirements
             - Windows 11 (recommended, full feature support)
             - Windows 10 version 1903+ (basic feature support)
             - WebView2 runtime (usually pre-installed on modern Windows)
-            
+
             ### 📋 Version Information
             - Version: ${{ steps.version.outputs.VERSION }}
             - Build Time: ${{ steps.version.outputs.BUILD_TIME }}
             - Git Commit: ${{ steps.version.outputs.COMMIT_SHA }}
-            
+
             ### 🔄 Update Notes
             This version is specifically optimized for Windows 11, providing better performance and user experience.
-            
+
             ---
             **Note**: For first-time users, please refer to the [Usage Documentation](https://github.com/clash-verge-rev/clash-verge-rev/wiki) for configuration.
           files: windows11-release/*

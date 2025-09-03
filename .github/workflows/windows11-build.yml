@@ -36,8 +36,9 @@ jobs:
         include:
           - target: x86_64-pc-windows-msvc
             arch: x64
-          - target: aarch64-pc-windows-msvc
-            arch: arm64
+          # 临时禁用 ARM64 构建以加快速度，后续可再启用
+          # - target: aarch64-pc-windows-msvc
+          #   arch: arm64
 
     steps:
       - name: Checkout
@@ -53,6 +54,8 @@ jobs:
         with:
           workspaces: src-tauri
           cache-on-failure: true
+          shared-key: "windows-build"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Add Target
         run: rustup target add ${{ matrix.target }}
@@ -77,20 +80,25 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm check ${{ matrix.target }}
 
       - name: Build
         uses: tauri-apps/tauri-action@v0
-        timeout-minutes: 45
+        timeout-minutes: 35
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          RUST_BACKTRACE: "1"
+          CARGO_INCREMENTAL: "0"
+          CARGO_NET_RETRY: "10"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+          CARGO_PROFILE_RELEASE_LTO: "thin"
         with:
           tauriScript: pnpm
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --bundles nsis
 
       - name: Get Version
         id: version

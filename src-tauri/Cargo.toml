@@ -92,13 +92,24 @@ verge-dev = []
 
 [profile.release]
 panic = "abort"
-codegen-units = 1
-lto = true
+codegen-units = 16
+lto = "thin"
 opt-level = "s"
 strip = true
 
+# CI 构建优化配置
+[profile.ci]
+inherits = "release"
+codegen-units = 16
+lto = "thin"
+opt-level = "2"
+strip = false
+incremental = true
+debug = false
+
 [profile.dev]
 incremental = true
+opt-level = 0
 
 [lib]
 name = "app_lib"

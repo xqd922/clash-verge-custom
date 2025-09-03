@@ -1,0 +1,30 @@
+[build]
+# 使用更快的链接器
+rustflags = [
+    "-C", "link-arg=-fuse-ld=lld",  # Windows 上使用 lld 链接器
+]
+
+# 网络配置优化
+[net]
+retry = 3
+git-fetch-with-cli = true
+
+# 注册表配置
+[registries]
+crates-io = { index = "https://github.com/rust-lang/crates.io-index" }
+
+# 构建缓存配置
+[cargo-new]
+vcs = "git"
+
+# 目标配置
+[target.x86_64-pc-windows-msvc]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "link-arg=/INCREMENTAL:NO",  # 禁用增量链接以提高速度
+]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = [
+    "-C", "link-arg=/INCREMENTAL:NO",
+]

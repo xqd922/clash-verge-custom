@@ -41,6 +41,22 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+    // 构建优化配置
+    target: "esnext",
+    minify: "esbuild",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          mui: ["@mui/material", "@mui/icons-material"],
+          monaco: ["monaco-editor"],
+        },
+      },
+    },
+    // 禁用源码映射以加快构建
+    sourcemap: false,
+    // 增加内存限制
+    chunkSizeWarningLimit: 2000,
   },
   resolve: {
     alias: {
